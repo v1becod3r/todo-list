@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Trash2, Plus, Calendar, ChevronRight, ChevronDown } from "lucide-react"
+import { Trash2, Plus, Calendar, ChevronDown, ChevronRight } from "lucide-react"
 
 interface Subtask {
   id: number
@@ -63,7 +63,19 @@ export default function Component() {
     const savedTasks = localStorage.getItem("daily-tasks-v2")
     if (savedTasks) {
       try {
-        setAllTasks(JSON.parse(savedTasks))
+        const parsedTasks = JSON.parse(savedTasks)
+        // Ensure expanded property exists, default to true for existing tasks
+        const cleanedTasks: DayTasks = {}
+        Object.keys(parsedTasks).forEach((dateKey) => {
+          cleanedTasks[dateKey] = parsedTasks[dateKey].map((task: any) => ({
+            id: task.id,
+            text: task.text,
+            completed: task.completed,
+            subtasks: task.subtasks || [],
+            expanded: task.expanded !== undefined ? task.expanded : true,
+          }))
+        })
+        setAllTasks(cleanedTasks)
       } catch (error) {
         console.error("Error loading tasks:", error)
       }
@@ -92,7 +104,7 @@ export default function Component() {
         text: newTask.trim(),
         completed: false,
         subtasks: [],
-        expanded: false,
+        expanded: true,
       }
 
       updateTasks(dateKey, [...currentDateTasks, newTaskObj])
@@ -296,36 +308,34 @@ export default function Component() {
             </div>
 
             {/* Task list */}
-            <div className="space-y-4">
+            <div className="space-y-6">
               {currentTasks.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <p>No tasks yet. Add one above to get started!</p>
                 </div>
               ) : (
                 currentTasks.map((task) => (
-                  <div key={task.id} className="space-y-2">
+                  <div key={task.id} className="border rounded-lg bg-background shadow-sm">
                     {/* Main Task */}
                     <div
-                      className={`flex items-center gap-4 p-4 rounded-lg border transition-all ${
-                        task.completed ? "bg-muted/50 border-muted" : "bg-background border-border hover:shadow-sm"
+                      className={`flex items-center gap-4 py-4 pr-4 transition-all ${
+                        task.completed ? "bg-muted/50" : "bg-background hover:bg-muted/20"
                       }`}
                     >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleTaskExpansion(task.id)}
+                        className="text-muted-foreground hover:text-foreground"
+                        title={task.expanded ? "Hide subtasks" : "Show subtasks"}
+                      >
+                        {task.expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      </Button>
                       <Checkbox
                         id={`task-${task.id}`}
                         checked={task.completed}
                         onCheckedChange={() => toggleTask(task.id)}
                       />
-
-                      {/* Always show expand button */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 p-0"
-                        onClick={() => toggleTaskExpansion(task.id)}
-                        title={task.expanded ? "Hide subtasks" : "Show subtasks"}
-                      >
-                        {task.expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                      </Button>
 
                       {editingId === task.id && editingType === "task" ? (
                         <Input
@@ -345,7 +355,7 @@ export default function Component() {
                       ) : (
                         <label
                           htmlFor={`task-${task.id}`}
-                          className={`flex-1 cursor-pointer ${
+                          className={`flex-1 cursor-pointer font-medium ${
                             task.completed ? "line-through text-muted-foreground" : "text-foreground"
                           }`}
                           onDoubleClick={() => startEditing(task.id, task.text, "task")}
@@ -353,13 +363,12 @@ export default function Component() {
                         >
                           {task.text}
                           {task.subtasks.length > 0 && (
-                            <span className="ml-2 text-xs text-muted-foreground">
+                            <span className="ml-2 text-xs text-muted-foreground font-normal">
                               ({task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length})
                             </span>
                           )}
                         </label>
                       )}
-
                       <Button
                         variant="ghost"
                         size="icon"
@@ -371,64 +380,69 @@ export default function Component() {
                       </Button>
                     </div>
 
-                    {/* Subtasks - Always show when expanded OR when there are no subtasks but expanded */}
+                    {/* Subtasks section - Show when expanded */}
                     {task.expanded && (
-                      <div className="ml-10 space-y-3 mt-3">
-                        {task.subtasks.map((subtask) => (
-                          <div
-                            key={subtask.id}
-                            className={`flex items-center gap-3 p-3 rounded-md border transition-all ${
-                              subtask.completed ? "bg-muted/30 border-muted" : "bg-background/50 border-border/50"
-                            }`}
-                          >
-                            <Checkbox
-                              id={`subtask-${subtask.id}`}
-                              checked={subtask.completed}
-                              onCheckedChange={() => toggleSubtask(task.id, subtask.id)}
-                            />
-
-                            {editingId === subtask.id && editingType === "subtask" ? (
-                              <Input
-                                value={editingText}
-                                onChange={(e) => setEditingText(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    saveEdit()
-                                  } else if (e.key === "Escape") {
-                                    cancelEdit()
-                                  }
-                                }}
-                                onBlur={saveEdit}
-                                className="flex-1 h-8"
-                                autoFocus
-                              />
-                            ) : (
-                              <label
-                                htmlFor={`subtask-${subtask.id}`}
-                                className={`flex-1 cursor-pointer text-sm ${
-                                  subtask.completed ? "line-through text-muted-foreground" : "text-foreground"
+                      <div className="px-4 pb-4">
+                        {/* Existing subtasks */}
+                        {task.subtasks.length > 0 && (
+                          <div className="space-y-2 mb-3">
+                            {task.subtasks.map((subtask) => (
+                              <div
+                                key={subtask.id}
+                                className={`flex items-center gap-3 p-3 ml-6 rounded-md border transition-all ${
+                                  subtask.completed ? "bg-muted/30 border-muted" : "bg-background/50 border-border/50"
                                 }`}
-                                onDoubleClick={() => startEditing(subtask.id, subtask.text, "subtask")}
-                                title="Double-click to edit"
                               >
-                                {subtask.text}
-                              </label>
-                            )}
+                                <Checkbox
+                                  id={`subtask-${subtask.id}`}
+                                  checked={subtask.completed}
+                                  onCheckedChange={() => toggleSubtask(task.id, subtask.id)}
+                                />
 
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => deleteSubtask(task.id, subtask.id)}
-                              className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                              <span className="sr-only">Delete subtask</span>
-                            </Button>
+                                {editingId === subtask.id && editingType === "subtask" ? (
+                                  <Input
+                                    value={editingText}
+                                    onChange={(e) => setEditingText(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        saveEdit()
+                                      } else if (e.key === "Escape") {
+                                        cancelEdit()
+                                      }
+                                    }}
+                                    onBlur={saveEdit}
+                                    className="flex-1 h-8"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <label
+                                    htmlFor={`subtask-${subtask.id}`}
+                                    className={`flex-1 cursor-pointer text-sm ${
+                                      subtask.completed ? "line-through text-muted-foreground" : "text-foreground"
+                                    }`}
+                                    onDoubleClick={() => startEditing(subtask.id, subtask.text, "subtask")}
+                                    title="Double-click to edit"
+                                  >
+                                    {subtask.text}
+                                  </label>
+                                )}
+
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => deleteSubtask(task.id, subtask.id)}
+                                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                  <span className="sr-only">Delete subtask</span>
+                                </Button>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        )}
 
-                        {/* Add subtask input - Always show when expanded */}
-                        <div className="flex gap-2">
+                        {/* Add subtask input - Show when expanded */}
+                        <div className="flex gap-2 ml-6">
                           <Input
                             type="text"
                             placeholder="Add a subtask..."
