@@ -317,7 +317,9 @@ export default function Component() {
                 currentTasks.map((task) => (
                   <div key={task.id} className="border rounded-lg bg-background shadow-sm">
                     {/* Main Task */}
-                    <div className="flex items-center gap-4 py-4 pr-4 transition-all bg-muted/20">
+                    <div
+                      className="flex items-center gap-4 py-4 pr-4 transition-all bg-muted/20"
+                    >
                       <Button
                         variant="ghost"
                         size="icon"
@@ -325,9 +327,7 @@ export default function Component() {
                         className="text-muted-foreground hover:bg-transparent hover:text-muted-foreground"
                         title={task.expanded ? "Hide subtasks" : "Show subtasks"}
                       >
-                        <div className="transition-transform duration-300 ease-in-out">
-                          {task.expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                        </div>
+                        {task.expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                       </Button>
                       <Checkbox
                         id={`task-${task.id}`}
@@ -379,11 +379,7 @@ export default function Component() {
                     </div>
 
                     {/* Subtasks section - Show when expanded */}
-                    <div
-                      className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                        task.expanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-                      }`}
-                    >
+                    {task.expanded && (
                       <div className="px-4 pb-4">
                         {/* Existing subtasks */}
                         {task.subtasks.length > 0 && (
@@ -461,7 +457,7 @@ export default function Component() {
                           </Button>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 ))
               )}
