@@ -380,7 +380,7 @@ export default function Component() {
 
                     {/* Subtasks section - Show when expanded */}
                     <div
-                      className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                      className={`transition-all duration-300 ease-in-out ${
                         task.expanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
                       }`}
                     >
