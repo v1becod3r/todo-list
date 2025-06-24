@@ -4,8 +4,8 @@ import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent } from "@/components/ui/card"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Trash2, Plus, Calendar, ChevronRight, ChevronDown } from "lucide-react"
 
 interface Subtask {
@@ -259,7 +259,7 @@ export default function Component() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-2xl mx-auto">
         <Card className="shadow-lg">
-          <CardContent className="space-y-4 py-4">
+          <CardContent className="space-y-6 py-8">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="today" className="flex items-center gap-2">
@@ -271,50 +271,32 @@ export default function Component() {
                   Tomorrow
                 </TabsTrigger>
               </TabsList>
-
-              <TabsContent value="today" className="space-y-4">
-                <div className="text-center">
-                  {stats.totalItems > 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      {stats.completedItems} of {stats.totalItems} items completed
-                    </p>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="tomorrow" className="space-y-4">
-                <div className="text-center">
-                  {stats.totalItems > 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      {stats.completedItems} of {stats.totalItems} items completed
-                    </p>
-                  )}
-                </div>
-              </TabsContent>
             </Tabs>
 
             {/* Add new task */}
-            <div className="flex gap-2">
-              <Input
-                type="text"
-                placeholder={`Add a new task for ${activeTab}...`}
-                value={newTask}
-                onChange={(e) => setNewTask(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    addTask()
-                  }
-                }}
-                className="flex-1"
-              />
-              <Button onClick={addTask} size="icon">
-                <Plus className="w-4 h-4" />
-                <span className="sr-only">Add task</span>
-              </Button>
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder={`Add a new task for ${activeTab}...`}
+                  value={newTask}
+                  onChange={(e) => setNewTask(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      addTask()
+                    }
+                  }}
+                  className="flex-1"
+                />
+                <Button onClick={addTask} size="icon">
+                  <Plus className="w-4 h-4" />
+                  <span className="sr-only">Add task</span>
+                </Button>
+              </div>
             </div>
 
             {/* Task list */}
-            <div className="space-y-2">
+            <div className="space-y-4">
               {currentTasks.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <p>No tasks yet. Add one above to get started!</p>
@@ -324,7 +306,7 @@ export default function Component() {
                   <div key={task.id} className="space-y-2">
                     {/* Main Task */}
                     <div
-                      className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                      className={`flex items-center gap-4 p-4 rounded-lg border transition-all ${
                         task.completed ? "bg-muted/50 border-muted" : "bg-background border-border hover:shadow-sm"
                       }`}
                     >
@@ -391,11 +373,11 @@ export default function Component() {
 
                     {/* Subtasks - Always show when expanded OR when there are no subtasks but expanded */}
                     {task.expanded && (
-                      <div className="ml-8 space-y-2">
+                      <div className="ml-10 space-y-3 mt-3">
                         {task.subtasks.map((subtask) => (
                           <div
                             key={subtask.id}
-                            className={`flex items-center gap-3 p-2 rounded-md border transition-all ${
+                            className={`flex items-center gap-3 p-3 rounded-md border transition-all ${
                               subtask.completed ? "bg-muted/30 border-muted" : "bg-background/50 border-border/50"
                             }`}
                           >
@@ -473,8 +455,8 @@ export default function Component() {
 
             {/* Progress indicator */}
             {stats.totalItems > 0 && (
-              <div className="mt-6">
-                <div className="flex justify-between text-sm text-muted-foreground mb-2">
+              <div className="mt-8">
+                <div className="flex justify-between text-sm text-muted-foreground mb-3">
                   <span>Progress</span>
                   <span>{Math.round((stats.completedItems / stats.totalItems) * 100)}%</span>
                 </div>
