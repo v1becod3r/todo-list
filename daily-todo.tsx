@@ -318,15 +318,13 @@ export default function Component() {
                   <div key={task.id} className="border rounded-lg bg-background shadow-sm">
                     {/* Main Task */}
                     <div
-                      className={`flex items-center gap-4 py-4 pr-4 transition-all ${
-                        task.completed ? "bg-muted/50" : "bg-background hover:bg-muted/20"
-                      }`}
+                      className="flex items-center gap-4 py-4 pr-4 transition-all bg-muted/20"
                     >
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => toggleTaskExpansion(task.id)}
-                        className="text-muted-foreground hover:text-foreground"
+                        className="text-muted-foreground hover:bg-transparent hover:text-muted-foreground"
                         title={task.expanded ? "Hide subtasks" : "Show subtasks"}
                       >
                         {task.expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -355,7 +353,7 @@ export default function Component() {
                       ) : (
                         <label
                           htmlFor={`task-${task.id}`}
-                          className={`flex-1 cursor-pointer font-medium ${
+                          className={`flex-1 flex items-center cursor-pointer font-medium ${
                             task.completed ? "line-through text-muted-foreground" : "text-foreground"
                           }`}
                           onDoubleClick={() => startEditing(task.id, task.text, "task")}
@@ -385,13 +383,11 @@ export default function Component() {
                       <div className="px-4 pb-4">
                         {/* Existing subtasks */}
                         {task.subtasks.length > 0 && (
-                          <div className="space-y-2 mb-3">
+                          <div className="space-y-3 mb-4">
                             {task.subtasks.map((subtask) => (
                               <div
                                 key={subtask.id}
-                                className={`flex items-center gap-3 p-3 ml-6 rounded-md border transition-all ${
-                                  subtask.completed ? "bg-muted/30 border-muted" : "bg-background/50 border-border/50"
-                                }`}
+                                className="flex items-center gap-3 p-3 ml-6 rounded-md border transition-all bg-background/50 border-border/50"
                               >
                                 <Checkbox
                                   id={`subtask-${subtask.id}`}
@@ -472,12 +468,12 @@ export default function Component() {
               <div className="mt-8">
                 <div className="flex justify-between text-sm text-muted-foreground mb-3">
                   <span>Progress</span>
-                  <span>{Math.round((stats.completedItems / stats.totalItems) * 100)}%</span>
+                  <span>{Math.round((stats.completedTasks / stats.totalTasks) * 100)}%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
                   <div
                     className="bg-primary h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(stats.completedItems / stats.totalItems) * 100}%` }}
+                    style={{ width: `${(stats.completedTasks / stats.totalTasks) * 100}%` }}
                   />
                 </div>
               </div>
