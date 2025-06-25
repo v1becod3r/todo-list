@@ -112,7 +112,7 @@ export default function Component() {
         text: newTask[board].trim(),
         completed: false,
         subtasks: [],
-        expanded: true,
+        expanded: false,
         board,
       }
       setTaskBoards((prev) => ({
