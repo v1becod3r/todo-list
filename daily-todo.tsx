@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -49,7 +49,9 @@ export default function Component() {
   const [draggedTask, setDraggedTask] = useState<{ id: number; board: "today" | "longterm" } | null>(null)
   const [dragOverBoard, setDragOverBoard] = useState<"today" | "longterm" | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
-  const [notesTextareaRef, setNotesTextareaRef] = useState<HTMLTextAreaElement | null>(null)
+  const notesTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const todayInputRef = useRef<HTMLInputElement>(null)
+  const longtermInputRef = useRef<HTMLInputElement>(null)
 
   // Load tasks from localStorage on component mount
   useEffect(() => {
@@ -98,8 +100,8 @@ export default function Component() {
           setIsNotesPreview(false)
           // Focus the textarea after a brief delay to ensure it's rendered
           setTimeout(() => {
-            if (notesTextareaRef) {
-              notesTextareaRef.focus()
+            if (notesTextareaRef.current) {
+              notesTextareaRef.current.focus()
             }
           }, 50)
         }
@@ -111,6 +113,33 @@ export default function Component() {
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [notesTextareaRef])
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if typing in an input or textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Focus today's task input on "/"
+      if (e.key === "/" && !e.shiftKey) {
+        e.preventDefault();
+        todayInputRef.current?.focus();
+      }
+      
+      // Focus long-term tasks input on "Shift + /"
+      if (e.key === "?" && e.shiftKey) {
+        e.preventDefault();
+        longtermInputRef.current?.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   // Save tasks to localStorage whenever tasks change
   useEffect(() => {
@@ -439,6 +468,7 @@ export default function Component() {
             {/* Add new task */}
             <div className="flex gap-2">
               <Input
+                ref={board === "today" ? todayInputRef : longtermInputRef}
                 type="text"
                 placeholder="Add new task"
                 value={newTask[board]}
@@ -605,7 +635,7 @@ export default function Component() {
                           <Input
                             type="text"
                             placeholder="Add a subtask..."
-                            value={newSubtask[task.id] || ""}
+                            value={newSubtask[task.id] ?? ""}
                             onChange={(e) => setNewSubtask((prev) => ({ ...prev, [task.id]: e.target.value }))}
                             onKeyDown={(e) => {
                               if (e.key === "Enter") {
@@ -708,7 +738,7 @@ export default function Component() {
           </div>
         ) : (
           <Textarea
-            ref={(ref) => setNotesTextareaRef(ref)}
+            ref={notesTextareaRef}
             className="
               shadow-lg
               border-border/50
