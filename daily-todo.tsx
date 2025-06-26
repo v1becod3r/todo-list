@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Trash2, Plus, ChevronDown, ChevronRight, GripVertical, Calendar, Clock } from "lucide-react"
+import { Trash2, Plus, ChevronDown, ChevronRight, GripVertical, Calendar, Clock, Edit, Eye } from "lucide-react"
+import { Textarea } from "./components/ui/textarea"
 
 interface Subtask {
   id: number
@@ -27,12 +28,14 @@ interface Task {
 interface TaskBoards {
   today: Task[]
   longterm: Task[]
+  notes: string
 }
 
 export default function Component() {
   const [taskBoards, setTaskBoards] = useState<TaskBoards>({
     today: [],
     longterm: [],
+    notes: "",
   })
   const [newTask, setNewTask] = useState<{ today: string; longterm: string }>({
     today: "",
@@ -42,9 +45,11 @@ export default function Component() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editingText, setEditingText] = useState("")
   const [editingType, setEditingType] = useState<"task" | "subtask">("task")
+  const [isNotesPreview, setIsNotesPreview] = useState(false)
   const [draggedTask, setDraggedTask] = useState<{ id: number; board: "today" | "longterm" } | null>(null)
   const [dragOverBoard, setDragOverBoard] = useState<"today" | "longterm" | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const [notesTextareaRef, setNotesTextareaRef] = useState<HTMLTextAreaElement | null>(null)
 
   // Load tasks from localStorage on component mount
   useEffect(() => {
@@ -70,40 +75,109 @@ export default function Component() {
               expanded: task.expanded !== undefined ? task.expanded : true,
               board: "longterm",
             })),
+            notes: parsedTasks.notes || "", // Load notes from localStorage
           })
         }
       } catch (error) {
         console.error("Error loading tasks:", error)
       }
-    } else {
-      // Try to migrate from old single-board format
-      const oldSavedTasks = localStorage.getItem("daily-tasks-simple")
-      if (oldSavedTasks) {
-        try {
-          const parsedTasks = JSON.parse(oldSavedTasks)
-          setTaskBoards({
-            today: parsedTasks.map((task: any) => ({
-              id: task.id,
-              text: task.text,
-              completed: task.completed,
-              subtasks: task.subtasks || [],
-              expanded: task.expanded !== undefined ? task.expanded : true,
-              board: "today",
-            })),
-            longterm: [],
-          })
-          localStorage.removeItem("daily-tasks-simple")
-        } catch (error) {
-          console.error("Error migrating old tasks:", error)
+    }
+  }, [])
+
+  // Keyboard shortcuts for notes
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey) {
+        if (event.key === 'd') {
+          // Cmd/Ctrl + D: Toggle preview
+          event.preventDefault()
+          setIsNotesPreview(prev => !prev)
+        } else if (event.key === 'e') {
+          // Cmd/Ctrl + E: Focus on textarea (switch to edit mode and focus)
+          event.preventDefault()
+          setIsNotesPreview(false)
+          // Focus the textarea after a brief delay to ensure it's rendered
+          setTimeout(() => {
+            if (notesTextareaRef) {
+              notesTextareaRef.focus()
+            }
+          }, 50)
         }
       }
     }
-  }, [])
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [notesTextareaRef])
 
   // Save tasks to localStorage whenever tasks change
   useEffect(() => {
     localStorage.setItem("daily-tasks-boards", JSON.stringify(taskBoards))
   }, [taskBoards])
+
+  // Handle notes change
+  const handleNotesChange = (value: string) => {
+    setTaskBoards((prev) => ({
+      ...prev,
+      notes: value,
+    }))
+  }
+
+  // Simple markdown renderer
+  const renderMarkdown = (text: string) => {
+    if (!text) return <div className="text-muted-foreground italic">No notes yet...</div>
+    
+    return text.split('\n').map((line, index) => {
+      // Headers (with strikethrough support)
+      if (line.startsWith('### ')) {
+        const headerText = line.slice(4).replace(/~~(.+?)~~/g, '<span style="text-decoration: line-through; opacity: 0.7;">$1</span>')
+        return <h3 key={index} className="text-lg font-semibold mt-4 mb-2" dangerouslySetInnerHTML={{ __html: headerText }} />
+      }
+      if (line.startsWith('## ')) {
+        const headerText = line.slice(3).replace(/~~(.+?)~~/g, '<span style="text-decoration: line-through; opacity: 0.7;">$1</span>')
+        return <h2 key={index} className="text-xl font-semibold mt-4 mb-2" dangerouslySetInnerHTML={{ __html: headerText }} />
+      }
+      if (line.startsWith('# ')) {
+        const headerText = line.slice(2).replace(/~~(.+?)~~/g, '<span style="text-decoration: line-through; opacity: 0.7;">$1</span>')
+        return <h1 key={index} className="text-2xl font-bold mt-4 mb-2" dangerouslySetInnerHTML={{ __html: headerText }} />
+      }
+      
+      // Process all text formatting
+      let processedLine = line
+        // Strikethrough first (to avoid conflicts)
+        .replace(/~~(.+?)~~/g, '<span style="text-decoration: line-through; opacity: 0.7;">$1</span>')
+        // Bold italic
+        .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+        // Bold
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        // Italic
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        // Code
+        .replace(/`(.+?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-sm font-mono">$1</code>')
+      
+      // Lists
+      if (line.startsWith('- ') || line.startsWith('* ')) {
+        return (
+          <li key={index} className="ml-4 mb-1" dangerouslySetInnerHTML={{ __html: processedLine.slice(2) }} />
+        )
+      }
+      
+      // Links
+      processedLine = processedLine.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">$1</a>')
+      
+      // Empty lines
+      if (line.trim() === '') {
+        return <br key={index} />
+      }
+      
+      // Regular paragraphs
+      return (
+        <p key={index} className="mb-2" dangerouslySetInnerHTML={{ __html: processedLine }} />
+      )
+    })
+  }
 
   const addTask = (board: "today" | "longterm") => {
     if (newTask[board].trim() !== "") {
@@ -233,6 +307,7 @@ export default function Component() {
       setTaskBoards((prev) => ({
         today: updateTasksInBoard(prev.today),
         longterm: updateTasksInBoard(prev.longterm),
+        notes: prev.notes,
       }))
     }
     setEditingId(null)
@@ -577,12 +652,86 @@ export default function Component() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-200 to-slate-800 p-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="flex flex-row gap-4 min-h-screen bg-gradient-to-br from-slate-200 to-slate-800 p-4">
+      <div className="flex-1 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {renderTaskBoard("today", "Today", "bg-blue-300/50")}
           {renderTaskBoard("longterm", "All", "bg-green-300/50")}
         </div>
+      </div>
+      <div>
+      <div className="relative">
+        {/* Integrated header that appears inside the yellow container */}
+        <div className="
+          border-border/50
+          bg-yellow-300/50
+          backdrop-blur-sm
+          w-72
+          rounded-t-md
+          border
+          border-b-0
+          pt-1
+          flex items-center justify-end
+        ">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsNotesPreview(!isNotesPreview)}
+            className="h-5 px-2 text-xs hover:bg-black/10 text-foreground/70 hover:text-foreground"
+            title={`Toggle preview (${navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl'}+D) • Focus edit (${navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl'}+E)`}
+          >
+            {isNotesPreview ? (
+              <Edit className="w-3 h-3 mr-1" />
+            ) : (
+              <Eye className="w-3 h-3 mr-1" />
+            )}
+          </Button>
+        </div>
+        
+        {isNotesPreview ? (
+          <div className="
+            shadow-lg
+            border-border/50
+            bg-yellow-300/50
+            backdrop-blur-sm
+            w-72
+            min-h-56
+            p-3
+            pt-0
+            rounded-b-md
+            border
+            border-t-0
+            prose prose-sm max-w-none
+            overflow-y-auto
+          ">
+            {renderMarkdown(taskBoards.notes)}
+          </div>
+        ) : (
+          <Textarea
+            ref={(ref) => setNotesTextareaRef(ref)}
+            className="
+              shadow-lg
+              border-border/50
+              bg-yellow-300/50
+              backdrop-blur-sm
+              focus-visible:ring-0
+              focus-visible:ring-offset-0
+              w-72
+              font-mono
+              text-sm
+              min-h-56
+              rounded-t-none
+              rounded-b-md
+              border
+              border-t-0
+              pt-0
+            "
+            placeholder="Notes"
+            value={taskBoards.notes}
+            onChange={(e) => handleNotesChange(e.target.value)}
+          />
+        )}
+      </div>
       </div>
     </div>
   )
