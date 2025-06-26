@@ -45,7 +45,7 @@ export default function Component() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editingText, setEditingText] = useState("")
   const [editingType, setEditingType] = useState<"task" | "subtask">("task")
-  const [isNotesPreview, setIsNotesPreview] = useState(false)
+  const [isNotesPreview, setIsNotesPreview] = useState(true)
   const [draggedTask, setDraggedTask] = useState<{ id: number; board: "today" | "longterm" } | null>(null)
   const [dragOverBoard, setDragOverBoard] = useState<"today" | "longterm" | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
