@@ -510,7 +510,7 @@ export default function Component() {
                       } ${dragOverIndex === index && dragOverBoard === board ? "border-primary/50 border-2 transform translate-y-1" : "border-border/50"} cursor-move`}
                   >
                     {/* Main Task */}
-                    <div className="flex items-center gap-3 py-4 pr-4 transition-all rounded-t-lg">
+                    <div className="flex items-center gap-3 py-4 pr-4 transition-all rounded-t-lg overflow-scroll">
                       <div className="text-muted-foreground/40 hover:text-foreground cursor-grab active:cursor-grabbing transition-colors">
                         <GripVertical className="w-4 h-4" />
                       </div>
@@ -581,7 +581,7 @@ export default function Component() {
                             {task.subtasks.map((subtask) => (
                               <div
                                 key={subtask.id}
-                                className="flex items-center gap-2 p-2 ml-4 rounded-md border transition-all bg-background/50 border-border/50"
+                                className="flex items-center gap-2 p-2 ml-4 rounded-md border transition-all bg-background/50 border-border/50 overflow-scroll"
                               >
                                 <Checkbox
                                   id={`subtask-${subtask.id}`}
